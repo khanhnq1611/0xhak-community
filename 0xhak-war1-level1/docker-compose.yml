@@ -1,14 +1,15 @@
 version: '3.8'
 
 services:
-  php-app:
+  level1:
     build: .
-    container_name: 0xhak-php
+    container_name: 0xhak-level1
     ports:
       - "8080:80"
     volumes:
       - ./app:/var/www/html
       - ./uploads:/var/www/html/uploads
+      - ./flag.txt:/flag.txt
     environment:
       - DB_HOST=db
       - DB_NAME=hak_community
@@ -46,7 +47,7 @@ services:
       PMA_USER: root
       PMA_PASSWORD: root_password
     ports:
-      - "8081:80"
+      - "8082:80"
     networks:
       - hak-network
 

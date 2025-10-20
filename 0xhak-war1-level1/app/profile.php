@@ -7,32 +7,36 @@ if (!isLoggedIn()) {
     exit();
 }
 
-$pageTitle = 'Profile';
-$message = '';
-$conn = getDbConnection();
-
 // Handle profile update
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $bio = $_POST['bio'] ?? '';
-        
+
         // Handle avatar upload
         if (isset($_FILES['avatar']) && $_FILES['avatar']['error'] === UPLOAD_ERR_OK) {
             // Delete old avatar if exists
             if (!empty($currentUser['avatar']) && file_exists(__DIR__ . '/uploads/avatars/' . $currentUser['avatar'])) {
                 @unlink(__DIR__ . '/uploads/avatars/' . $currentUser['avatar']);
             }
-            
+
             // Generate unique filename
             $fileExt = strtolower(pathinfo($_FILES['avatar']['name'], PATHINFO_EXTENSION));
-            $avatarFilename = 'avatar_' . uniqid() . '.' . $fileExt;
+            $allowedExts = ['jpg', 'jpeg', 'png', 'gif'];
+            if (!in_array($fileExt, $allowedExts)) {
+                throw new Exception("Only image files (JPG, PNG, GIF) are allowed.");
+            }
+            $maxSize = 1024 * 1024; // 1MB
+            if ($_FILES['avatar']['size'] > $maxSize) {
+                throw new Exception("File size must be less than 1MB.");
+            }
+            $avatarFilename = 'avatar_' . $currentUser['id'] . '_' . uniqid() . '.' . $fileExt;
             $targetPath = __DIR__ . '/uploads/avatars/' . $avatarFilename;
-            
+
             // Create uploads directory if it doesn't exist
             if (!file_exists(__DIR__ . '/uploads/avatars')) {
                 mkdir(__DIR__ . '/uploads/avatars', 0755, true);
             }
-            
+
             // Move uploaded file
             if (move_uploaded_file($_FILES['avatar']['tmp_name'], $targetPath)) {
                 // Update avatar in database
@@ -41,12 +45,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 throw new Exception("Failed to upload avatar. Please try again.");
             }
-            
+
             // Update current user data in session
             $currentUser['avatar'] = $avatarFilename;
             $message = '<div class="alert alert-success">Profile updated successfully!</div>';
         }
-        
+
         // Update bio if provided
         if (!empty($bio)) {
             $stmt = $conn->prepare("UPDATE users SET bio = ? WHERE id = ?");
@@ -54,17 +58,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $currentUser['bio'] = $bio;
             $message = '<div class="alert alert-success">Profile updated successfully!</div>';
         }
-        
+
         // Refresh current user data
         $stmt = $conn->prepare("SELECT * FROM users WHERE id = ?");
         $stmt->execute([$currentUser['id']]);
         $currentUser = $stmt->fetch(PDO::FETCH_ASSOC);
         $_SESSION['user'] = $currentUser;
-        
+
     } catch (Exception $e) {
         $message = '<div class="alert alert-danger">Error: ' . htmlspecialchars($e->getMessage()) . '</div>';
     }
 }
+
+$pageTitle = 'Profile';
+$message = '';
+$conn = getDbConnection();
+
+
 
 include 'includes/header.php';
 ?>
@@ -75,13 +85,13 @@ include 'includes/header.php';
             <div class="card-header">
                 <h4 class="mb-0"><i class="fas fa-user me-2"></i>My Profile</h4>
             </div>
-            <div class="card-body">
-                <?php echo $message; ?>
-                
-                <div class="text-center mb-4">
+             <div class="card-body">
+                 <?php echo $message; ?>
+
+                 <div class="text-center mb-4">
                     <?php if (!empty($currentUser['avatar']) && file_exists(__DIR__ . '/uploads/avatars/' . $currentUser['avatar'])): ?>
-                        <img src="/uploads/avatars/<?php echo htmlspecialchars($currentUser['avatar']); ?>" 
-                             class="profile-avatar mb-3" 
+                        <img src="/display.php?file=<?php echo htmlspecialchars($currentUser['avatar']); ?>"
+                             class="profile-avatar mb-3"
                              alt="Profile Picture">
                     <?php endif; ?>
                     
@@ -110,7 +120,8 @@ include 'includes/header.php';
                         </span>
                     </div>
                 </div>
-                
+
+                <?php if (isset($_GET['edit']) && $_GET['edit'] == '1'): ?>
                 <form method="POST" enctype="multipart/form-data">
                     <div class="mb-4">
                         <h5><i class="fas fa-camera me-2"></i>Change Avatar</h5>
@@ -122,21 +133,22 @@ include 'includes/header.php';
 
                         </div>
                     </div>
-                    
+
                     <div class="mb-4">
                         <h5><i class="fas fa-info-circle me-2"></i>About Me</h5>
-                        <textarea class="form-control" name="bio" rows="4" 
+                        <textarea class="form-control" name="bio" rows="4"
                                   placeholder="Tell us something about yourself..."><?php echo htmlspecialchars($currentUser['bio'] ?? ''); ?></textarea>
                     </div>
-                    
+
                     <div class="d-grid gap-2 d-md-flex justify-content-md-end">
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-save me-1"></i> Save Changes
                         </button>
                     </div>
                 </form>
-            </div>
-        </div>
+                <?php endif; ?>
+             </div>
+         </div>
         
         <div class="card mt-4">
             <div class="card-header">
@@ -194,10 +206,10 @@ include 'includes/header.php';
                                     ?>
                                 </h2>
                                 <p class="mb-0 text-muted">Challenges Solved</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                             </div>
+                 </div>
+             </div>
+         </div>
             </div>
         </div>
     </div>

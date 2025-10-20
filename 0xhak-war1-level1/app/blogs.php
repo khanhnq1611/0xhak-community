@@ -11,27 +11,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isLoggedIn()) {
     try {
         $title = $_POST['title'] ?? '';
         $content = $_POST['content'] ?? '';
-        $filePath = null;
 
         if (empty($title) || empty($content)) {
             throw new Exception("Title and content are required");
         }
 
-        // Handle file upload if present
-        if (isset($_FILES['blog_file']) && $_FILES['blog_file']['error'] === UPLOAD_ERR_OK) {
-            $filePath = handleFileUpload(
-                $_FILES['blog_file'],
-                __DIR__ . '/uploads/blogs',
-                ['md', 'txt']
-            );
-            // Make the path relative for storage
-            $filePath = 'uploads/' . basename($filePath);
-        }
-
         // Insert blog post
-        $stmt = $conn->prepare("INSERT INTO blogs (user_id, title, content, file_path) VALUES (?, ?, ?, ?)");
-        $stmt->execute([$currentUser['id'], $title, $content, $filePath]);
-        
+        $stmt = $conn->prepare("INSERT INTO blogs (user_id, title, content) VALUES (?, ?, ?)");
+        $stmt->execute([$currentUser['id'], $title, $content]);
+
         $message = '<div class="alert alert-success">Blog post published successfully!</div>';
     } catch (Exception $e) {
         $message = '<div class="alert alert-danger">Error: ' . htmlspecialchars($e->getMessage()) . '</div>';
@@ -62,7 +50,7 @@ include 'includes/header.php';
                     <h5 class="mb-0">Write a New Blog Post</h5>
                 </div>
                 <div class="card-body">
-                    <form method="POST" enctype="multipart/form-data">
+                    <form method="POST">
                         <div class="mb-3">
                             <label for="title" class="form-label">Title</label>
                             <input type="text" class="form-control" id="title" name="title" required>
@@ -70,13 +58,6 @@ include 'includes/header.php';
                         <div class="mb-3">
                             <label for="content" class="form-label">Content</label>
                             <textarea class="form-control" id="content" name="content" rows="5" required></textarea>
-                        </div>
-                        <div class="mb-3">
-                            <label for="blog_file" class="form-label">Attach File (optional, .md or .txt)</label>
-                            <div class="custom-file">
-                                <input type="file" class="custom-file-input" id="blog_file" name="blog_file" accept=".md,.txt">
-                                <label class="custom-file-label" for="blog_file">Choose file</label>
-                            </div>
                         </div>
                         <button type="submit" class="btn btn-primary">Publish</button>
                     </form>
@@ -97,10 +78,10 @@ include 'includes/header.php';
                 <div class="card mb-4">
                     <div class="card-body">
                         <div class="d-flex align-items-center mb-3">
-                            <img src="/uploads/avatars/<?php echo htmlspecialchars($blog['avatar'] ?? 'default.png'); ?>" 
-                                 class="avatar me-2" 
+                            <img src="/display.php?file=<?php echo htmlspecialchars($blog['avatar'] ?? 'default.png'); ?>"
+                                 class="avatar me-2"
                                  alt="<?php echo htmlspecialchars($blog['username']); ?>"
-                                 onerror="this.src='/uploads/avatars/default.png'">
+                                 onerror="this.src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='">
                             <div>
                                 <h5 class="mb-0"><?php echo htmlspecialchars($blog['title']); ?></h5>
                                 <small class="text-muted">
@@ -122,16 +103,6 @@ include 'includes/header.php';
                             echo $content;
                             ?>
                         </div>
-                        
-                        <?php if (!empty($blog['file_path'])): ?>
-                            <div class="mt-3">
-                                <a href="/<?php echo htmlspecialchars($blog['file_path']); ?>" 
-                                   class="btn btn-sm btn-outline-primary" 
-                                   target="_blank">
-                                    <i class="fas fa-download me-1"></i> Download Attachment
-                                </a>
-                            </div>
-                        <?php endif; ?>
                     </div>
                 </div>
             <?php endforeach; ?>

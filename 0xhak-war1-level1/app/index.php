@@ -33,13 +33,11 @@ include 'includes/header.php';
                                 <tr class="rank-<?php echo $index + 1; ?>">
                                     <td><?php echo $index + 1; ?></td>
                                     <td>
-                                        <?php 
-                                        $avatarPath = __DIR__ . '/uploads/avatars/' . ($user['avatar'] ?? '');
-                                        if (!empty($user['avatar']) && file_exists($avatarPath)): 
-                                        ?>
-                                            <img src="/uploads/avatars/<?php echo htmlspecialchars($user['avatar']); ?>" 
-                                                 class="avatar me-2" 
-                                                 alt="<?php echo htmlspecialchars($user['username']); ?>">
+                                        <?php if (!empty($user['avatar'])): ?>
+                                            <img src="/display.php?file=<?php echo htmlspecialchars($user['avatar']); ?>"
+                                                 class="avatar me-2"
+                                                 alt="<?php echo htmlspecialchars($user['username']); ?>"
+                                                 onerror="this.src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='">
                                         <?php endif; ?>
                                         <?php echo htmlspecialchars($user['username']); ?>
                                     </td>

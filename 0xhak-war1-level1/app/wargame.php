@@ -21,8 +21,8 @@ if ($selectedGameId) {
     if ($gameDetails) {
         // Get top 10 players for selected game
         $stmt = $conn->prepare("
-            SELECT u.username, u.avatar, ws.score, 
-                   @rank := @rank + 1 as rank
+            SELECT u.username, u.avatar, ws.score,
+                   @rank := @rank + 1 as player_rank
             FROM (SELECT @rank := 0) r,
                  wargame_scores ws
             JOIN users u ON ws.user_id = u.id
@@ -108,16 +108,16 @@ include 'includes/header.php';
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php foreach ($leaderboard as $player): ?>
-                                        <tr class="rank-<?php echo $player['rank']; ?>">
-                                            <td>#<?php echo $player['rank']; ?></td>
-                                            <td>
-                                                <img src="/uploads/avatars/<?php echo htmlspecialchars($player['avatar'] ?? 'default.png'); ?>" 
-                                                     class="avatar me-2" 
-                                                     alt="<?php echo htmlspecialchars($player['username']); ?>"
-                                                     onerror="this.src='/uploads/avatars/default.png'">
-                                                <?php echo htmlspecialchars($player['username']); ?>
-                                            </td>
+                                     <?php foreach ($leaderboard as $player): ?>
+                                         <tr class="rank-<?php echo $player['player_rank']; ?>">
+                                             <td>#<?php echo $player['player_rank']; ?></td>
+                                             <td>
+                                                 <img src="/display.php?file=<?php echo htmlspecialchars($player['avatar'] ?? 'default.png'); ?>"
+                                                      class="avatar me-2"
+                                                      alt="<?php echo htmlspecialchars($player['username']); ?>"
+                                                      onerror="this.src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='">
+                                                 <?php echo htmlspecialchars($player['username']); ?>
+                                             </td>
                                             <td class="text-end">
                                                 <span class="badge bg-primary"><?php echo number_format($player['score']); ?></span>
                                             </td>
